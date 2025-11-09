@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Software Engineering Process Demo | Food Ordering & Tracking</title>
     <!-- Tailwind CSS v3 -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -43,6 +43,24 @@
     </script>
     <style type="text/tailwindcss">
         @layer utilities {
+            /* Respect notches and home indicator on modern devices */
+            .safe-top { top: env(safe-area-inset-top); }
+            .safe-bottom { bottom: calc(2rem + env(safe-area-inset-bottom)); }
+            .pad-safe-y { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+
+            /* Make media auto-scale to container width */
+            .responsive-media img, .responsive-media video, .responsive-media iframe {
+                max-width: 100%;
+                height: auto;
+            }
+
+            /* Fluid typography helpers (optional) */
+            .fluid-h1 { font-size: clamp(1.75rem, 4.5vw, 3.5rem); }
+            .fluid-h2 { font-size: clamp(1.25rem, 3.5vw, 2.25rem); }
+            .fluid-p  { font-size: clamp(0.95rem, 2.2vw, 1.125rem); }
+
+            /* Use small viewport units to avoid mobile 100vh issues */
+            .min-h-svh { min-height: 100svh; }
             .text-shadow {
                 text-shadow: 0 2px 4px rgba(0,0,0,0.1);
             }
@@ -63,7 +81,7 @@
                 height: 4px;
                 background: linear-gradient(90deg, #0066cc 0%, #00aaff 100%);
                 position: fixed;
-                top: 0;
+                top: 0; /* overridden by .safe-top when supported */
                 left: 0;
                 z-index: 50;
                 transition: width 0.3s ease;
@@ -96,12 +114,12 @@
         }
     </style>
 </head>
-<body class="bg-black text-white min-h-screen">
+<body class="bg-black text-white min-h-svh pad-safe-y">
     <!-- Progress Bar -->
-    <div id="progress-bar" class="progress-bar w-0"></div>
+    <div id="progress-bar" class="progress-bar w-0 safe-top"></div>
 
     <!-- Navigation -->
-    <div class="fixed bottom-8 left-0 right-0 flex justify-center z-40">
+    <div class="fixed left-0 right-0 flex justify-center z-40 safe-bottom">
         <div class="flex space-x-4">
             <button id="prev-btn" class="text-white opacity-70 hover:opacity-100 transition-opacity">
                 <i class="fa fa-chevron-left text-xl"></i>
@@ -119,7 +137,7 @@
     </div>
 
     <!-- Slides Container -->
-    <div id="slides-container" class="relative h-screen overflow-hidden">
+    <div id="slides-container" class="relative min-h-svh overflow-auto responsive-media">
         <!-- Slide 1: Title & Hook -->
         <div class="slide absolute inset-0 flex items-center justify-center px-8 opacity-100 z-30">
             <div class="max-w-4xl mx-auto text-center">
