@@ -1,0 +1,51 @@
+### Health Check
+GET http://localhost:3000/healthz
+
+### List available users (first record is seeded customer)
+GET http://localhost:3000/api/v1/users
+
+### List restaurants
+GET http://localhost:3000/api/v1/catalog/restaurants
+
+### List menu items for a restaurant
+# Replace {{restaurantId}} with an id from the restaurants list
+GET http://localhost:3000/api/v1/catalog/restaurants/{{restaurantId}}/menu
+
+### Create an order
+# Replace ids with values from previous responses
+POST http://localhost:3000/api/v1/orders
+Content-Type: application/json
+
+{
+  "userId": "{{customerId}}",
+  "restaurantId": "{{restaurantId}}",
+  "paymentChannel": "credit_card",
+  "items": [
+    {
+      "menuItemId": "{{menuItemId}}",
+      "qty": 1
+    }
+  ]
+}
+
+### Mark payment as PAID (triggers CONFIRMED state)
+POST http://localhost:3000/api/v1/orders/{{orderId}}/payments
+Content-Type: application/json
+
+{
+  "status": "PAID"
+}
+
+### Advance order state to PREPARING
+POST http://localhost:3000/api/v1/orders/{{orderId}}/transition
+Content-Type: application/json
+
+{
+  "status": "PREPARING"
+}
+
+### Start delivery tracking (moves order to DELIVERING and streams positions via WebSocket)
+POST http://localhost:3000/api/v1/orders/{{orderId}}/delivery/start
+
+### Fetch live delivery snapshot
+GET http://localhost:3000/api/v1/deliveries/{{orderId}}
