@@ -26,7 +26,9 @@ a:hover {
 }
 
 .app-shell {
+  /* Use small viewport units to avoid mobile browser UI shrinking issues */
   min-height: 100vh;
+  min-height: 100svh;
   display: grid;
   grid-template-rows: auto 1fr auto;
 }
@@ -34,7 +36,11 @@ a:hover {
 .app-header {
   background: #0f172a;
   color: #f8fafc;
+  /* Respect notches and rounded corners */
   padding: 1rem 2.5rem;
+  padding-top: calc(1rem + env(safe-area-inset-top));
+  padding-left: calc(2.5rem + env(safe-area-inset-left));
+  padding-right: calc(2.5rem + env(safe-area-inset-right));
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -48,7 +54,8 @@ a:hover {
 }
 
 .app-title {
-  font-size: 1.5rem;
+  /* Fluid heading that scales across devices */
+  font-size: clamp(1.25rem, 2.5vw, 1.75rem);
   font-weight: 600;
 }
 
@@ -85,6 +92,9 @@ a:hover {
 
 .app-main {
   padding: 2.5rem;
+  /* Add safe-area horizontal padding when present */
+  padding-left: calc(2.5rem + env(safe-area-inset-left));
+  padding-right: calc(2.5rem + env(safe-area-inset-right));
   max-width: 1200px;
   margin: 0 auto;
   width: 100%;
@@ -92,6 +102,10 @@ a:hover {
 
 .app-footer {
   padding: 1rem 2.5rem;
+  /* Respect bottom home indicator */
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+  padding-left: calc(2.5rem + env(safe-area-inset-left));
+  padding-right: calc(2.5rem + env(safe-area-inset-right));
   background: #0f172a;
   color: rgba(248, 250, 252, 0.7);
   font-size: 0.85rem;
@@ -117,7 +131,8 @@ a:hover {
 
 .hero h1 {
   margin: 0 0 0.75rem;
-  font-size: 2.25rem;
+  /* Fluid hero title */
+  font-size: clamp(1.75rem, 5vw, 2.5rem);
 }
 
 .hero p {
@@ -499,10 +514,15 @@ select {
 @media (max-width: 768px) {
   .app-main {
     padding: 1.25rem;
+    padding-left: calc(1.25rem + env(safe-area-inset-left));
+    padding-right: calc(1.25rem + env(safe-area-inset-right));
   }
 
   .app-header {
     padding: 1rem 1.25rem;
+    padding-top: calc(1rem + env(safe-area-inset-top));
+    padding-left: calc(1.25rem + env(safe-area-inset-left));
+    padding-right: calc(1.25rem + env(safe-area-inset-right));
     gap: 0.75rem;
   }
 
@@ -579,4 +599,12 @@ select {
     gap: 0.5rem;
     align-items: flex-start;
   }
+}
+
+/* Ensure media scales within content width */
+.app-main img,
+.app-main video,
+.app-main iframe {
+  max-width: 100%;
+  height: auto;
 }
