@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Software Engineering Process Demo | Food Ordering & Tracking</title>
+    <!-- Tailwind CSS v3 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <!-- GSAP for animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0066cc',
+                        secondary: '#00aaff',
+                        dark: '#000000',
+                        'dark-gray': '#121212',
+                        'light-gray': '#e0e0e0',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    animation: {
+                        'typing': 'typing 3.5s steps(40, end), blink .75s step-end infinite',
+                    },
+                    keyframes: {
+                        typing: {
+                            'from': { width: '0' },
+                            'to': { width: '100%' }
+                        },
+                        blink: {
+                            'from, to': { borderColor: 'transparent' },
+                            '50%': { borderColor: 'white' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .slide-transition {
+                transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
+            }
+            .typing-container {
+                display: inline-block;
+            }
+            .typing-text {
+                overflow: hidden;
+                border-right: 0.15em solid white;
+                white-space: nowrap;
+                margin: 0 auto;
+                letter-spacing: 0.05em;
+            }
+            .progress-bar {
+                height: 4px;
+                background: linear-gradient(90deg, #0066cc 0%, #00aaff 100%);
+                position: fixed;
+                top: 0;
+                left: 0;
+                z-index: 50;
+                transition: width 0.3s ease;
+            }
+            .slide-indicator {
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                background-color: rgba(255, 255, 255, 0.3);
+                transition: all 0.3s ease;
+            }
+            .slide-indicator.active {
+                background-color: white;
+                transform: scale(1.2);
+            }
+            .speaker-note {
+                font-size: 0.85rem;
+                line-height: 1.6;
+                color: #a0a0a0;
+            }
+            .highlight {
+                color: #00aaff;
+                font-weight: 500;
+            }
+            .timing {
+                font-size: 0.75rem;
+                color: #666;
+                font-style: italic;
+            }
+        }
+    </style>
+</head>
+<body class="bg-black text-white min-h-screen">
+    <!-- Progress Bar -->
+    <div id="progress-bar" class="progress-bar w-0"></div>
+
+    <!-- Navigation -->
+    <div class="fixed bottom-8 left-0 right-0 flex justify-center z-40">
+        <div class="flex space-x-4">
+            <button id="prev-btn" class="text-white opacity-70 hover:opacity-100 transition-opacity">
+                <i class="fa fa-chevron-left text-xl"></i>
+            </button>
+            <div id="slide-indicators" class="flex space-x-3">
+                <div class="slide-indicator active" data-slide="0"></div>
+                <div class="slide-indicator" data-slide="1"></div>
+                <div class="slide-indicator" data-slide="2"></div>
+                <div class="slide-indicator" data-slide="3"></div>
+            </div>
+            <button id="next-btn" class="text-white opacity-70 hover:opacity-100 transition-opacity">
+                <i class="fa fa-chevron-right text-xl"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Slides Container -->
+    <div id="slides-container" class="relative h-screen overflow-hidden">
+        <!-- Slide 1: Title & Hook -->
+        <div class="slide absolute inset-0 flex items-center justify-center px-8 opacity-100 z-30">
+            <div class="max-w-4xl mx-auto text-center">
+                <h1 class="text-5xl md:text-7xl font-light mb-6">
+                    Food Ordering & Tracking App
+                    <span class="typing-container block mt-4">
+                        <span id="typing-text-1" class="typing-text text-2xl md:text-3xl text-secondary"></span>
+                    </span>
+                </h1>
+                <p class="text-xl md:text-2xl text-gray-300 mt-8">
+                    Deliver value fast without compromising reliability, privacy, or security
+                </p>
+                <div class="mt-12 timing">
+                    <p>Talk time: 7 minutes | Slides: 4</p>
+                </div>
+                
+                <!-- Speaker Notes -->
+                <div class="mt-16 pt-8 border-t border-gray-800 speaker-note text-left">
+                    <h3 class="text-white font-medium mb-2">Speaker Notes (≈20s):</h3>
+                    <p>Good morning/afternoon everyone. We built a mobile‑first Food Ordering & Tracking app that lets customers place orders, pay securely, and track couriers in real time. Our goal throughout the project is simple: <span class="highlight">deliver value fast</span> without compromising <span class="highlight">reliability, privacy, or security</span>. Over the next seven minutes, I’ll show how we used software engineering practices—especially <span class="highlight">Requirements Engineering</span> and <span class="highlight">System Modeling/Design</span>—to make disciplined, outcome‑driven decisions.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 2: Requirements Engineering -->
+        <div class="slide absolute inset-0 flex items-center justify-center px-8 opacity-0 -translate-x-full z-20">
+            <div class="max-w-5xl mx-auto">
+                <h2 class="text-4xl md:text-5xl font-light mb-8">
+                    Requirements Engineering
+                    <span class="typing-container block mt-4">
+                        <span id="typing-text-2" class="typing-text text-xl md:text-2xl text-secondary"></span>
+                    </span>
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-12 mt-12">
+                    <div>
+                        <h3 class="text-2xl font-light mb-4 border-l-4 border-secondary pl-4">Vision & Scope</h3>
+                        <p class="text-gray-300 mb-6">
+                            Our vision: a <span class="highlight">seamless city‑wide ordering & delivery experience</span> that brings local restaurants closer to customers.
+                        </p>
+                        <p class="text-gray-300">
+                            Version 1 focuses on five core capabilities: browse menus, customize items, place orders, pay, and track deliveries — within a <span class="highlight">10 km radius</span>.
+                        </p>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-2xl font-light mb-4 border-l-4 border-secondary pl-4">User Roles</h3>
+                        <ul class="space-y-3 text-gray-300">
+                            <li><span class="highlight">Customers</span>: need confidence and clarity</li>
+                            <li><span class="highlight">Restaurants</span>: need operational predictability and automatic stock‑out handling</li>
+                            <li><span class="highlight">Couriers</span>: need efficient dispatch and accurate navigation</li>
+                            <li><span class="highlight">Admins</span>: need merchant onboarding, risk controls, and ops dashboards</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="mt-12">
+                    <h3 class="text-2xl font-light mb-4 border-l-4 border-secondary pl-4">Priorities & Non‑Functional Requirements</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <h4 class="text-xl font-light mb-3">MoSCoW Priorities</h4>
+                            <ul class="space-y-2 text-gray-300">
+                                <li><span class="text-secondary">Must‑have</span>: create orders, secure payments, reliable status updates, real‑time tracking, timely notifications</li>
+                                <li><span class="text-gray-400">Should‑have</span>: coupons, favorites, invoices, dark mode</li>
+                                <li><span class="text-gray-500">Could‑have</span>: group orders, cross‑restaurant bundles</li>
+                                <li><span class="text-gray-600">Won’t do now</span>: long‑distance cross‑city delivery</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="text-xl font-light mb-3">Non‑Functional Requirements</h4>
+                            <ul class="space-y-2 text-gray-300">
+                                <li>P95 API latency <span class="highlight">under 250 ms</span></li>
+                                <li>Real‑time updates arrive <span class="highlight">within 2 s</span> to the client app</li>
+                                <li><span class="highlight">99.9%</span> monthly availability</li>
+                                <li>End‑to‑end TLS, robust authz/authn, minimal PII collection</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Speaker Notes -->
+                <div class="mt-16 pt-8 border-t border-gray-800 speaker-note text-left">
+                    <h3 class="text-white font-medium mb-2">Speaker Notes (≈3:00):</h3>
+                    <p>We started with a clear vision: a <span class="highlight">seamless city‑wide ordering and delivery experience</span>. To keep v1 realistic, we focused on five capabilities—browse menus, customize items, place orders, pay, and track delivery—within a <span class="highlight">10 km radius</span>.</p>
+                    <p class="mt-2">We translated personas into <span class="highlight">user stories</span> and prioritized with <span class="highlight">MoSCoW</span>. Our must‑haves form the core: create orders with clear customizations; pay through a secure gateway; update order status reliably; stream <span class="highlight">courier location</span> to customers; and push timely notifications.</p>
+                    <p class="mt-2">To ensure design serves the experience, we set <span class="highlight">quantitative NFRs</span>: P95 API latency under 250 ms, real‑time updates reach the client within 2 seconds, and 99.9% monthly availability. For security, we require end‑to‑end TLS, strong authz/authn, and minimal PII collection.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3: System Modelling / Design -->
+        <div class="slide absolute inset-0 flex items-center justify-center px-8 opacity-0 -translate-x-full z-20">
+            <div class="max-w-5xl mx-auto">
+                <h2 class="text-4xl md:text-5xl font-light mb-8">
+                    System Modeling & Design
+                    <span class="typing-container block mt-4">
+                        <span id="typing-text-3" class="typing-text text-xl md:text-2xl text-secondary"></span>
+                    </span>
+                </h2>
+                
+                <div class="mt-12">
+                    <h3 class="text-2xl font-light mb-6 border-l-4 border-secondary pl-4">Architecture Overview</h3>
+                    <div class="bg-dark-gray p-6 rounded-lg">
+                        <div class="flex flex-col space-y-4">
+                            <div class="text-center py-3 border border-gray-700 rounded">
+                                <span class="text-secondary">Cross‑platform Mobile Clients</span> (Flutter / React Native)
+                            </div>
+                            <div class="text-center py-3 border border-gray-700 rounded">
+                                <span class="text-secondary">Backend for Frontend</span> (Backend-for-Frontend)
+                            </div>
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                <div class="text-center py-2 border border-gray-700 rounded text-sm">User Service</div>
+                                <div class="text-center py-2 border border-gray-700 rounded text-sm">Catalog Service</div>
+                                <div class="text-center py-2 border border-gray-700 rounded text-sm">Order Service</div>
+                                <div class="text-center py-2 border border-gray-700 rounded text-sm">Delivery Service</div>
+                                <div class="text-center py-2 border border-gray-700 rounded text-sm">Payment Service</div>
+                                <div class="text-center py-2 border border-gray-700 rounded text-sm">Notification Service</div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <div class="text-center py-2 border border-gray-700 rounded text-sm">
+                                    <span class="text-secondary">PostgreSQL</span> <br>Primary DB
+                                </div>
+                                <div class="text-center py-2 border border-gray-700 rounded text-sm">
+                                    <span class="text-secondary">Redis</span> <br>Caching & Rate Limiting
+                                </div>
+                                <div class="text-center py-2 border border-gray-700 rounded text-sm">
+                                    <span class="text-secondary">Kafka</span> <br>Event Streaming
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <div class="text-center py-2 border border-gray-700 rounded text-sm">
+                                    <span class="text-secondary">WebSocket</span> <br>Real‑time Updates
+                                </div>
+                                <div class="text-center py-2 border border-gray-700 rounded text-sm">
+                                    Maps Service <br>Routing & ETA
+                                </div>
+                                <div class="text-center py-2 border border-gray-700 rounded text-sm">
+                                    Payment Gateway <br>Auth & Refunds
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-12">
+                    <h3 class="text-2xl font-light mb-6 border-l-4 border-secondary pl-4">Order State Machine</h3>
+                    <div class="flex flex-wrap justify-center items-center gap-2 md:gap-4">
+                        <div class="bg-secondary text-black px-4 py-2 rounded-full font-medium">Created</div>
+                        <i class="fa fa-arrow-right text-gray-400"></i>
+                        <div class="bg-dark-gray px-4 py-2 rounded-full">Confirmed</div>
+                        <i class="fa fa-arrow-right text-gray-400"></i>
+                        <div class="bg-dark-gray px-4 py-2 rounded-full">In Prep</div>
+                        <i class="fa fa-arrow-right text-gray-400"></i>
+                        <div class="bg-dark-gray px-4 py-2 rounded-full">Picked Up</div>
+                        <i class="fa fa-arrow-right text-gray-400"></i>
+                        <div class="bg-dark-gray px-4 py-2 rounded-full">Out for Delivery</div>
+                        <i class="fa fa-arrow-right text-gray-400"></i>
+                        <div class="bg-dark-gray px-4 py-2 rounded-full">Delivered</div>
+                        <i class="fa fa-arrow-right text-gray-400"></i>
+                        <div class="bg-dark-gray px-4 py-2 rounded-full">Completed</div>
+                    </div>
+                    <div class="flex justify-center mt-4">
+                        <div class="flex items-center">
+                            <div class="bg-dark-gray px-4 py-2 rounded-full">Cancelled</div>
+                            <i class="fa fa-arrow-left text-gray-400 mx-2"></i>
+                            <div class="bg-dark-gray px-4 py-2 rounded-full">Refunded</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Speaker Notes -->
+                <div class="mt-16 pt-8 border-t border-gray-800 speaker-note text-left">
+                    <h3 class="text-white font-medium mb-2">Speaker Notes (≈2:00):</h3>
+                    <p>Our architecture balances delivery speed and reliability. <span class="highlight">Cross‑platform mobile clients</span> (e.g., Flutter or React Native) talk to a lightweight <span class="highlight">Backend for Frontend</span> that aggregates calls to domain services. Core services include <span class="highlight">Users, Catalog, Orders, Delivery, Payments, and Notifications</span>. We persist state in <span class="highlight">PostgreSQL</span> with read replicas, use <span class="highlight">Redis</span> for caching and rate limiting, and emit domain events to <span class="highlight">Kafka</span> to decouple workflows and absorb spikes.</p>
+                    <p class="mt-2">Real‑time tracking uses <span class="highlight">WebSockets</span> so customers can subscribe to order events and courier location streams. We integrate a <span class="highlight">maps provider</span> for routing and ETAs, and a <span class="highlight">payment gateway</span> for authorization, capture, and refunds. End‑to‑end, we have <span class="highlight">tracing, metrics, and structured logging</span> so we can hold SLOs and accelerate incident response.</p>
+                    <p class="mt-2">Orders move through a strict <span class="highlight">state machine</span>: Created → Confirmed → In Prep → Picked Up → Out for Delivery → Delivered → Completed, with Cancelled and Refunded branches where appropriate. Each transition is <span class="highlight">idempotent and auditable</span>, and emits events for downstream consumers like notifications, analytics, and dashboards.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 4: Implementation & Validation -->
+        <div class="slide absolute inset-0 flex items-center justify-center px-8 opacity-0 -translate-x-full z-20">
+            <div class="max-w-5xl mx-auto">
+                <h2 class="text-4xl md:text-5xl font-light mb-8">
+                    Implementation & Validation
+                    <span class="typing-container block mt-4">
+                        <span id="typing-text-4" class="typing-text text-xl md:text-2xl text-secondary"></span>
+                    </span>
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-12 mt-12">
+                    <div>
+                        <h3 class="text-2xl font-light mb-4 border-l-4 border-secondary pl-4">Ship Fast, Safely</h3>
+                        <ul class="space-y-3 text-gray-300">
+                            <li><i class="fa fa-check-circle text-secondary mr-2"></i> <span class="highlight">Trunk‑based development</span> with short‑lived PRs</li>
+                            <li><i class="fa fa-check-circle text-secondary mr-2"></i> <span class="highlight">Feature flags</span> for early merge and gradual rollout</li>
+                            <li><i class="fa fa-check-circle text-secondary mr-2"></i> <span class="highlight">Contract‑first</span> interface design</li>
+                            <li><i class="fa fa-check-circle text-secondary mr-2"></i> Idempotency keys, retries with backoff, dead‑letter queues</li>
+                            <li><i class="fa fa-check-circle text-secondary mr-2"></i> CI/CD quality gates: <span class="highlight">70%+</span> unit test coverage</li>
+                            <li><i class="fa fa-check-circle text-secondary mr-2"></i> <span class="highlight">Canary/blue‑green</span> deployments with auto‑rollback</li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-2xl font-light mb-4 border-l-4 border-secondary pl-4">Validation & Testing</h3>
+                        <div class="space-y-4">
+                            <div class="bg-dark-gray p-4 rounded-lg">
+                                <h4 class="text-lg font-light mb-2">Testing Pyramid</h4>
+                                <div class="flex flex-col items-center">
+                                    <div class="w-64 h-2 bg-secondary mb-1"></div>
+                                    <div class="w-48 h-2 bg-secondary mb-1"></div>
+                                    <div class="w-32 h-2 bg-secondary"></div>
+                                    <div class="flex justify-between w-64 mt-2 text-xs text-gray-400">
+                                        <span>Unit</span>
+                                        <span>Integration</span>
+                                        <span>End‑to‑End</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <ul class="space-y-2 text-gray-300">
+                                <li><i class="fa fa-check-circle text-secondary mr-2"></i> Unit: pricing logic, order state transitions</li>
+                                <li><i class="fa fa-check-circle text-secondary mr-2"></i> Integration: full happy path</li>
+                                <li><i class="fa fa-check-circle text-secondary mr-2"></i> E2E: user journeys on real devices</li>
+                                <li><i class="fa fa-check-circle text-secondary mr-2"></i> <span class="highlight">Chaos experiments</span>: simulate third‑party outages</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-12">
+                    <h3 class="text-2xl font-light mb-6 border-l-4 border-secondary pl-4">Roadmap</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-dark-gray p-6 rounded-lg">
+                            <h4 class="text-xl font-light mb-3 text-secondary">Version 2</h4>
+                            <ul class="space-y-2 text-gray-300">
+                                <li><i class="fa fa-arrow-right text-secondary mr-2"></i> Coupons & promotions</li>
+                                <li><i class="fa fa-arrow-right text-secondary mr-2"></i> Group orders</li>
+                                <li><i class="fa fa-arrow-right text-secondary mr-2"></i> Additional payment options</li>
+                                <li><i class="fa fa-arrow-right text-secondary mr-2"></i> Enhanced observability</li>
+                                <li><i class="fa fa-arrow-right text-secondary mr-2"></i> Security hardening</li>
+                            </ul>
+                        </div>
+                        <div class="bg-dark-gray p-6 rounded-lg">
+                            <h4 class="text-xl font-light mb-3 text-secondary">Version 3</h4>
+                            <ul class="space-y-2 text-gray-300">
+                                <li><i class="fa fa-arrow-right text-secondary mr-2"></i> Multi‑city routing optimization</li>
+                                <li><i class="fa fa-arrow-right text-secondary mr-2"></i> Smarter dispatch algorithms</li>
+                                <li><i class="fa fa-arrow-right text-secondary mr-2"></i> Advanced analytics & forecasting</li>
+                                <li><i class="fa fa-arrow-right text-secondary mr-2"></i> Cross‑platform expansion</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Speaker Notes -->
+                <div class="mt-16 pt-8 border-t border-gray-800 speaker-note text-left">
+                    <h3 class="text-white font-medium mb-2">Speaker Notes (≈2:00):</h3>
+                    <p>We move fast <span class="highlight">and</span> safely by leaning on process discipline. We use <span class="highlight">trunk‑based development</span> with short‑lived PRs and <span class="highlight">feature flags</span> so changes can merge early but roll out gradually. Interfaces are <span class="highlight">contract‑first</span>, allowing clients and servers to evolve independently without surprises.</p>
+                    <p class="mt-2">For resilience, we use <span class="highlight">idempotency keys</span>, <span class="highlight">retries with backoff</span>, and <span class="highlight">dead‑letter queues</span> in payments and dispatch workflows. In CI/CD, we enforce quality gates: unit test coverage over <span class="highlight">70%</span>, contract checks, and latency smoke tests for key endpoints and WebSocket updates. Deployments are <span class="highlight">canary/blue‑green</span> with automatic rollbacks, letting us observe real traffic safely and keep MTTR low.</p>
+                    <p class="mt-2">We validate across the <span class="highlight">testing pyramid</span>. Unit tests cover pricing logic, order transitions, and location parsing. <span class="highlight">Integration tests</span> exercise the full path from order to payment to dispatch, and <span class="highlight">end‑to‑end tests</span> confirm on real devices that customers can place orders and see live courier updates without manual intervention. We also run <span class="highlight">chaos experiments</span> to simulate third‑party outages—maps or payments—and verify graceful degradation and recovery.</p>
+                    <p class="mt-2">Looking ahead, <span class="highlight">Version 2</span> emphasizes customer‑visible value—coupons, group orders, and additional payment options—while we keep strengthening observability and security. <span class="highlight">Version 3</span> focuses on scale: multi‑city routing optimization and smarter dispatch algorithms. Throughout, one thing stays constant: process isn’t paperwork; it’s the system that enables us to deliver <span class="highlight">quickly, safely, and repeatably</span>.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Current slide index
+            let currentSlide = 0;
+            const totalSlides = 4;
+            
+            // DOM elements
+            const slides = document.querySelectorAll('.slide');
+            const indicators = document.querySelectorAll('.slide-indicator');
+            const progressBar = document.getElementById('progress-bar');
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            
+            // Typing effect texts
+            const typingTexts = [
+                "Software engineering process case study",
+                "From vision to requirements",
+                "From architecture to data models",
+                "From code to validation"
+            ];
+            
+            // Initialize typing effect for the first slide
+            typeEffect('typing-text-1', typingTexts[0]);
+            
+            // Update progress bar and indicators
+            function updateProgress() {
+                const progress = ((currentSlide + 1) / totalSlides) * 100;
+                progressBar.style.width = `${progress}%`;
+                
+                // Update indicators
+                indicators.forEach((indicator, index) => {
+                    if (index === currentSlide) {
+                        indicator.classList.add('active');
+                    } else {
+                        indicator.classList.remove('active');
+                    }
+                });
+            }
+            
+            // Show specific slide
+            function showSlide(index) {
+                if (index < 0) index = 0;
+                if (index >= totalSlides) index = totalSlides - 1;
+                
+                // Hide all slides
+                slides.forEach(slide => {
+                    slide.style.opacity = '0';
+                    slide.style.transform = 'translateX(-100%)';
+                    slide.style.zIndex = '20';
+                });
+                
+                // Show current slide
+                slides[index].style.opacity = '1';
+                slides[index].style.transform = 'translateX(0)';
+                slides[index].style.zIndex = '30';
+                
+                currentSlide = index;
+                updateProgress();
+                
+                // Initialize typing effect for current slide
+                const typingElement = document.getElementById(`typing-text-${index + 1}`);
+                if (typingElement) {
+                    // Clear previous text
+                    typingElement.textContent = '';
+                    // Apply typing effect
+                    typeEffect(`typing-text-${index + 1}`, typingTexts[index]);
+                }
+            }
+            
+            // Typing effect function
+            function typeEffect(elementId, text) {
+                const element = document.getElementById(elementId);
+                let i = 0;
+                const typingSpeed = 50;
+                
+                function type() {
+                    if (i < text.length) {
+                        element.textContent += text.charAt(i);
+                        i++;
+                        setTimeout(type, typingSpeed);
+                    }
+                }
+                
+                type();
+            }
+            
+            // Event listeners for navigation
+            prevBtn.addEventListener('click', () => {
+                showSlide(currentSlide - 1);
+            });
+            
+            nextBtn.addEventListener('click', () => {
+                showSlide(currentSlide + 1);
+            });
+            
+            // Event listeners for indicators
+            indicators.forEach((indicator, index) => {
+                indicator.addEventListener('click', () => {
+                    showSlide(index);
+                });
+            });
+            
+            // Keyboard navigation
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowLeft') {
+                    showSlide(currentSlide - 1);
+                } else if (e.key === 'ArrowRight') {
+                    showSlide(currentSlide + 1);
+                }
+            });
+            
+            // Initialize first slide
+            showSlide(0);
+        });
+    </script>
+</body>
+</html>
