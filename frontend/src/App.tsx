@@ -5,6 +5,9 @@ import { RestaurantsPage } from "./pages/RestaurantsPage";
 import { OrdersPage } from "./pages/OrdersPage";
 import { OrderBuilderPage } from "./pages/OrderBuilderPage";
 import { OrderDetailPage } from "./pages/OrderDetailPage";
+import { AdminDashboardPage } from "./pages/AdminDashboardPage";
+import { StaffDashboardPage } from "./pages/StaffDashboardPage";
+import { GroupOrderPage } from "./pages/GroupOrderPage";
 
 function App() {
   return (
@@ -17,6 +20,9 @@ function App() {
           <Route path="new" element={<OrderBuilderPage />} />
           <Route path=":orderId" element={<OrderDetailPage />} />
         </Route>
+        <Route path="group-order" element={<GroupOrderPage />} />
+        <Route path="admin" element={<AdminDashboardPage />} />
+        <Route path="staff" element={<StaffDashboardPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

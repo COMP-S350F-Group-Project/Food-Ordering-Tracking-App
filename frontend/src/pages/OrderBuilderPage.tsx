@@ -21,6 +21,16 @@ export function OrderBuilderPage() {
   const [menuError, setMenuError] = useState<string | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<Order | undefined>(undefined);
+  const [paymentChannel, setPaymentChannel] = useState<
+    | "credit_card"
+    | "apple_pay"
+    | "google_pay"
+    | "paypal"
+    | "cash_on_delivery"
+    | "wechat_pay"
+  >("credit_card");
+  const [couponCode, setCouponCode] = useState<string>("");
+  const [discountPreview, setDiscountPreview] = useState<{ discount: number; finalTotal: number; reason?: string } | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -75,6 +85,11 @@ export function OrderBuilderPage() {
     [menuItems, quantities],
   );
 
+  const finalPrice = useMemo(() => {
+    if (!discountPreview) return totalPrice;
+    return discountPreview.finalTotal;
+  }, [discountPreview, totalPrice]);
+
   const selectedItems = useMemo(
     () =>
       menuItems
@@ -104,11 +119,14 @@ export function OrderBuilderPage() {
       const order = await api.createOrder({
         userId: selectedUserId,
         restaurantId: selectedRestaurantId,
-        paymentChannel: "credit_card",
+        paymentChannel,
         items: selectedItems,
+        couponCode: couponCode || undefined,
       });
       setCreatedOrder(order);
       setQuantities({});
+      setCouponCode("");
+      setDiscountPreview(null);
     } catch (err) {
       setError(err instanceof Error ? err : new Error(String(err)));
     } finally {
@@ -199,7 +217,59 @@ export function OrderBuilderPage() {
             <strong>Items:</strong> {selectedItems.length}
           </div>
           <div>
-            <strong>Estimated total:</strong> ${totalPrice.toFixed(2)}
+            <strong>Subtotal:</strong> ${totalPrice.toFixed(2)}
+            {discountPreview && discountPreview.discount > 0 ? (
+              <>
+                {" "}
+                <span className="muted">(–${discountPreview.discount.toFixed(2)} with coupon)</span>
+              </>
+            ) : null}
+          </div>
+          {discountPreview && discountPreview.reason && discountPreview.discount === 0 ? (
+            <div className="muted">Coupon not applied: {discountPreview.reason}</div>
+          ) : null}
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="paymentChannel">Payment</label>
+          <select id="paymentChannel" value={paymentChannel} onChange={(e) => setPaymentChannel(e.target.value as any)}>
+            <option value="credit_card">Credit Card</option>
+            <option value="apple_pay">Apple Pay</option>
+            <option value="google_pay">Google Pay</option>
+            <option value="paypal">PayPal</option>
+            <option value="wechat_pay">WeChat Pay</option>
+            <option value="cash_on_delivery">Cash on Delivery</option>
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="coupon">Coupon code</label>
+          <div className="row">
+            <input
+              id="coupon"
+              type="text"
+              placeholder="e.g. WELCOME10"
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value)}
+            />
+            <button
+              type="button"
+              className="btn btn-secondary"
+              disabled={!couponCode || !selectedRestaurantId || totalPrice === 0}
+              onClick={async () => {
+                if (!selectedRestaurantId) return;
+                const res = await api.validateCoupon({ restaurantId: selectedRestaurantId, total: totalPrice, code: couponCode });
+                setDiscountPreview(res);
+              }}
+            >
+              Apply
+            </button>
+          </div>
+        </div>
+
+        <div className="form-summary">
+          <div>
+            <strong>Final total:</strong> ${finalPrice.toFixed(2)}
           </div>
         </div>
 

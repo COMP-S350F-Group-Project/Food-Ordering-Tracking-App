@@ -28,6 +28,23 @@ Content-Type: application/json
   ]
 }
 
+### Create an order with coupon
+POST http://localhost:3000/api/v1/orders
+Content-Type: application/json
+
+{
+  "userId": "{{customerId}}",
+  "restaurantId": "{{restaurantId}}",
+  "paymentChannel": "paypal",
+  "couponCode": "WELCOME10",
+  "items": [
+    {
+      "menuItemId": "{{menuItemId}}",
+      "qty": 3
+    }
+  ]
+}
+
 ### Mark payment as PAID (triggers CONFIRMED state)
 POST http://localhost:3000/api/v1/orders/{{orderId}}/payments
 Content-Type: application/json
@@ -49,3 +66,63 @@ POST http://localhost:3000/api/v1/orders/{{orderId}}/delivery/start
 
 ### Fetch live delivery snapshot
 GET http://localhost:3000/api/v1/deliveries/{{orderId}}
+
+### Promotions: list and validate
+GET http://localhost:3000/api/v1/promotions/coupons
+
+POST http://localhost:3000/api/v1/promotions/validate
+Content-Type: application/json
+
+{
+  "restaurantId": "{{restaurantId}}",
+  "total": 100,
+  "code": "WELCOME10"
+}
+
+### Admin: create a coupon (set x-api-key header)
+POST http://localhost:3000/api/v1/promotions/coupons
+Content-Type: application/json
+x-api-key: demo-admin-key
+
+{
+  "code": "SAVE20",
+  "type": "AMOUNT",
+  "value": 20,
+  "active": true
+}
+
+### Group order flow
+POST http://localhost:3000/api/v1/group-orders
+Content-Type: application/json
+
+{
+  "hostUserId": "{{customerId}}",
+  "restaurantId": "{{restaurantId}}"
+}
+
+POST http://localhost:3000/api/v1/group-orders/{{groupId}}/participants
+Content-Type: application/json
+
+{
+  "userId": "{{customerId}}",
+  "items": [
+    { "menuItemId": "{{menuItemId}}", "qty": 2 }
+  ]
+}
+
+POST http://localhost:3000/api/v1/group-orders/{{groupId}}/checkout
+Content-Type: application/json
+
+{
+  "paymentChannel": "cash_on_delivery",
+  "couponCode": "WELCOME10"
+}
+
+### Observability & Analytics
+GET http://localhost:3000/api/v1/metrics
+
+GET http://localhost:3000/api/v1/analytics/summary
+x-api-key: demo-admin-key
+
+GET http://localhost:3000/api/v1/analytics/forecast?minutes=30
+x-api-key: demo-admin-key

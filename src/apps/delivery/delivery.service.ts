@@ -17,11 +17,73 @@ import {
 } from "../../libs/common/types";
 import { trackingGateway } from "../tracking/tracking.gateway";
 import { logger } from "../../libs/common/logger";
+import { metrics } from "../observability/metrics";
 
 const trackingIntervals = new Map<string, NodeJS.Timeout>();
 
-const getAvailableCourier = (): User | undefined =>
-  Array.from(dataStore.users.values()).find((user) => user.role === "courier");
+const CITY_SPEED_KMH: Record<string, number> = {
+  HKG: 22, // urban average
+  SHA: 25,
+  BJ: 20,
+  default: 22,
+};
+
+const haversineKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+  const toRad = (v: number) => (v * Math.PI) / 180;
+  const R = 6371; // Earth radius in km
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
+const getCitySpeed = (city?: string): number =>
+  (CITY_SPEED_KMH[city ?? "default"] ?? CITY_SPEED_KMH.default) as number;
+
+const estimateEtaMinutes = (from: { lat: number; lng: number }, to: { lat: number; lng: number }, city?: string) => {
+  const km = haversineKm(from.lat, from.lng, to.lat, to.lng);
+  const speed: number = getCitySpeed(city); // km/h
+  const hours = km / Math.max(speed, 5);
+  return Math.max(Math.round(hours * 60), 3);
+};
+
+const selectBestCourier = (order: Order): User | undefined => {
+  const restaurant = dataStore.restaurants.get(order.restaurantId);
+  if (!restaurant) return undefined;
+  const couriers = Array.from(dataStore.users.values()).filter((u) => u.role === "courier");
+  if (couriers.length === 0) return undefined;
+  // Infer dropoff target from customer's first address
+  const customer = dataStore.users.get(order.userId);
+  const drop = customer?.addresses?.[0];
+  // Score couriers by ETA from their last known location to restaurant + to dropoff
+  const activeDeliveriesByCourier = new Map<string, number>();
+  for (const d of dataStore.deliveries.values()) {
+    if (d.status !== "DELIVERED" && d.status !== "FAILED") {
+      activeDeliveriesByCourier.set(d.courierId, (activeDeliveriesByCourier.get(d.courierId) ?? 0) + 1);
+    }
+  }
+  let best: { user: User; score: number } | undefined;
+  for (const c of couriers) {
+    const loc = dataStore.courierLocations.get(c.id) ?? {
+      lat: c.addresses?.[0]?.lat ?? restaurant.lat,
+      lng: c.addresses?.[0]?.lng ?? restaurant.lng,
+    };
+    const toPickup = estimateEtaMinutes(loc, { lat: restaurant.lat, lng: restaurant.lng }, restaurant.city);
+    const toDrop = drop
+      ? estimateEtaMinutes({ lat: restaurant.lat, lng: restaurant.lng }, { lat: drop.lat, lng: drop.lng }, drop.city)
+      : 10;
+    const loadPenalty = (activeDeliveriesByCourier.get(c.id) ?? 0) * 5; // 5 min per active delivery
+    const score = toPickup + toDrop + loadPenalty;
+    if (!best || score < best.score) {
+      best = { user: c, score };
+    }
+  }
+  return best?.user;
+};
 
 export interface ManualLocationUpdateInput {
   courierId: string;
@@ -41,7 +103,7 @@ export class DeliveryService {
       return existing;
     }
 
-    const courier = getAvailableCourier();
+    const courier = selectBestCourier(order);
     if (!courier) {
       throw new NotFoundError("Courier", {});
     }
@@ -57,6 +119,7 @@ export class DeliveryService {
 
     dataStore.deliveries.set(delivery.id, delivery);
     updateOrderStatus(orderId, "CONFIRMED");
+    metrics.inc("dispatch_assignments");
 
     const location: CourierLocation = {
       courierId: courier.id,
@@ -80,6 +143,7 @@ export class DeliveryService {
 
     updateDeliveryStatus(orderId, "DELIVERING");
     updateOrderStatus(orderId, "DELIVERING");
+    metrics.inc("deliveries_started");
 
     this.emitTrackingUpdate(this.getDelivery(orderId), order);
 

@@ -24,6 +24,8 @@ interface DataStore {
   deliveries: Map<string, Delivery>;
   payments: Map<string, Payment>;
   courierLocations: Map<string, CourierLocation>;
+  coupons: Map<string, import("../libs/common/types").Coupon>;
+  groupOrders: Map<string, import("../libs/common/types").GroupOrder>;
 }
 
 const store: DataStore = {
@@ -34,6 +36,8 @@ const store: DataStore = {
   deliveries: new Map(),
   payments: new Map(),
   courierLocations: new Map(),
+  coupons: new Map(),
+  groupOrders: new Map(),
 };
 
 export const dataStore = {
@@ -58,18 +62,25 @@ export const dataStore = {
   get courierLocations() {
     return store.courierLocations;
   },
+  get coupons() {
+    return store.coupons;
+  },
+  get groupOrders() {
+    return store.groupOrders;
+  },
 };
 
-const createAddress = (userId: string, label: string, lat: number, lng: number): Address => ({
+const createAddress = (userId: string, label: string, lat: number, lng: number, city?: string): Address => ({
   id: randomUUID(),
   userId,
   label,
   lat,
   lng,
   detail: `${label} Address Detail`,
+  city,
 });
 
-const createUser = (role: User["role"], name: string, phone: string, email: string): User => {
+const createUser = (role: User["role"], name: string, phone: string, email: string, city?: string): User => {
   const id = randomUUID();
   const base: User = {
     id,
@@ -78,20 +89,21 @@ const createUser = (role: User["role"], name: string, phone: string, email: stri
     phone,
     email,
     createdAt: new Date(),
+    city,
   };
   if (role === "customer") {
     return {
       ...base,
       addresses: [
-        createAddress(id, "Home", 22.282, 114.158),
-        createAddress(id, "Office", 22.335, 114.175),
+        createAddress(id, "Home", 22.282, 114.158, city ?? "HKG"),
+        createAddress(id, "Office", 22.335, 114.175, city ?? "HKG"),
       ],
     };
   }
   return base;
 };
 
-const createRestaurant = (name: string, lat: number, lng: number, isOpen: boolean): Restaurant => ({
+const createRestaurant = (name: string, lat: number, lng: number, isOpen: boolean, city?: string): Restaurant => ({
   id: randomUUID(),
   name,
   lat,
@@ -99,6 +111,7 @@ const createRestaurant = (name: string, lat: number, lng: number, isOpen: boolea
   rating: 4.5,
   openHours: "09:00-21:00",
   isOpen,
+  city,
 });
 
 const createMenuItem = (
@@ -124,12 +137,17 @@ export const seedData = () => {
     return;
   }
 
-  const customer = createUser("customer", "Alice Customer", "+85212340000", "alice@example.com");
-  const courier = createUser("courier", "Bob Courier", "+85212340001", "bob@example.com");
-  const admin = createUser("admin", "Admin One", "+85212340002", "admin@example.com");
+  // Users across cities (HKG, SHA)
+  const customer = createUser("customer", "Alice Customer", "+85212340000", "alice@example.com", "HKG");
+  const courierHkg1 = createUser("courier", "Bob Courier", "+85212340001", "bob@example.com", "HKG");
+  const courierHkg2 = createUser("courier", "Carol Courier", "+85212340003", "carol@example.com", "HKG");
+  const courierSha1 = createUser("courier", "Dave Courier", "+862112340001", "dave@example.com", "SHA");
+  const admin = createUser("admin", "Admin One", "+85212340002", "admin@example.com", "HKG");
+  const restStaffHkg = createUser("restaurant", "Staff HK DimSum", "+85212340010", "staff.hkg@example.com", "HKG");
+  const restStaffSha = createUser("restaurant", "Staff SH Noodle", "+862112340010", "staff.sha@example.com", "SHA");
 
-  const restaurantA = createRestaurant("Dim Sum Express", 22.282, 114.158, true);
-  const restaurantB = createRestaurant("Noodle House", 22.334, 114.17, true);
+  const restaurantA = createRestaurant("Dim Sum Express", 22.282, 114.158, true, "HKG");
+  const restaurantB = createRestaurant("Noodle House", 31.2304, 121.4737, true, "SHA");
 
   const menuA1 = createMenuItem(restaurantA.id, "Shrimp Dumplings", 48.5, 100);
   const menuA2 = createMenuItem(restaurantA.id, "BBQ Pork Bun", 32.0, 100);
@@ -140,7 +158,9 @@ export const seedData = () => {
   });
   const menuB2 = createMenuItem(restaurantB.id, "Wonton Noodles", 52.0, 90);
 
-  [customer, courier, admin].forEach((u) => store.users.set(u.id, u));
+  [customer, courierHkg1, courierHkg2, courierSha1, admin, restStaffHkg, restStaffSha].forEach((u) =>
+    store.users.set(u.id, u),
+  );
   [restaurantA, restaurantB].forEach((r) => store.restaurants.set(r.id, r));
   [menuA1, menuA2, menuA3, menuA4, menuB1, menuB2].forEach((m) => store.menuItems.set(m.id, m));
 
@@ -191,7 +211,7 @@ export const seedData = () => {
   const delivery: Delivery = {
     id: randomUUID(),
     orderId,
-    courierId: courier.id,
+    courierId: courierHkg1.id,
     pickupEta: dayjs().add(5, "minute").toDate(),
     dropoffEta: dayjs().add(20, "minute").toDate(),
     status: "DELIVERING",
@@ -201,16 +221,16 @@ export const seedData = () => {
   store.deliveries.set(delivery.id, delivery);
 
   const location: CourierLocation = {
-    courierId: courier.id,
+    courierId: courierHkg1.id,
     lat: 22.29,
     lng: 114.16,
     recordedAt: new Date(),
   };
-  store.courierLocations.set(courier.id, location);
+  store.courierLocations.set(courierHkg1.id, location);
 
   const initialTracking: TrackingUpdate = {
     orderId,
-    courierId: courier.id,
+    courierId: courierHkg1.id,
     lat: location.lat,
     lng: location.lng,
     etaMinutes: 12,
@@ -258,6 +278,29 @@ export const seedData = () => {
     status: "PENDING",
   };
   store.payments.set(payment2.id, payment2);
+
+  // Seed a couple of coupons
+  const couponPercentId = randomUUID();
+  store.coupons.set(couponPercentId, {
+    id: couponPercentId,
+    code: "WELCOME10",
+    type: "PERCENT",
+    value: 10,
+    active: true,
+    createdAt: new Date(),
+    usageLimit: 1000,
+    usedCount: 0,
+  });
+  const couponFlatId = randomUUID();
+  store.coupons.set(couponFlatId, {
+    id: couponFlatId,
+    code: "SAVE20",
+    type: "AMOUNT",
+    value: 20,
+    active: true,
+    createdAt: new Date(),
+    minOrderAmount: 60,
+  });
 };
 
 export const findDeliveryByOrderId = (orderId: string): Delivery | undefined => {

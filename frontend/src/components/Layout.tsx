@@ -6,6 +6,9 @@ const navItems = [
   { to: "/restaurants", label: "Restaurants" },
   { to: "/orders/new", label: "New Order" },
   { to: "/orders", label: "Orders" },
+  { to: "/group-order", label: "Group Order" },
+  { to: "/staff", label: "Staff" },
+  { to: "/admin", label: "Admin" },
 ];
 
 export function Layout() {

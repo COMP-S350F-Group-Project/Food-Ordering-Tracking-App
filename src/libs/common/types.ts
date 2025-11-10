@@ -8,6 +8,8 @@ export interface User {
   email: string;
   createdAt: Date;
   addresses?: Address[] | undefined;
+  // Optional: primary city for routing/dispatch demos
+  city?: string | undefined;
 }
 
 export interface Address {
@@ -17,6 +19,7 @@ export interface Address {
   lat: number;
   lng: number;
   detail: string;
+  city?: string | undefined;
 }
 
 export interface Restaurant {
@@ -27,6 +30,7 @@ export interface Restaurant {
   rating: number;
   openHours: string;
   isOpen: boolean;
+  city?: string | undefined;
 }
 
 export interface MenuItem {
@@ -74,6 +78,13 @@ export interface Order {
   createdAt: Date;
   updatedAt: Date;
   items: OrderItem[];
+  // Optional discount and applied coupon code
+  discountAmount?: number | undefined;
+  couponCode?: string | undefined;
+  // Optional linkage to a group order
+  groupOrderId?: string | undefined;
+  // Optional explicit delivery address for routing demo
+  deliveryAddressId?: string | undefined;
 }
 
 export interface Delivery {
@@ -108,7 +119,13 @@ export interface CourierLocation {
 export interface Payment {
   id: string;
   orderId: string;
-  channel: "credit_card" | "apple_pay" | "google_pay";
+  channel:
+    | "credit_card"
+    | "apple_pay"
+    | "google_pay"
+    | "paypal"
+    | "cash_on_delivery"
+    | "wechat_pay";
   amount: number;
   status: PayStatus;
   txnId?: string | undefined;
@@ -130,4 +147,39 @@ export interface TrackingUpdate {
   etaMinutes: number;
   status: DeliveryStatus;
   updatedAt: Date;
+}
+
+// Promotions: simple coupon model for demo purposes
+export type CouponType = "PERCENT" | "AMOUNT";
+export interface Coupon {
+  id: string;
+  code: string;
+  type: CouponType;
+  value: number; // percent 0-100 for PERCENT or currency amount for AMOUNT
+  validFrom?: Date | undefined;
+  validTo?: Date | undefined;
+  usageLimit?: number | undefined;
+  usedCount?: number | undefined;
+  restaurantId?: string | undefined; // restrict to restaurant if provided
+  minOrderAmount?: number | undefined;
+  active: boolean;
+  createdAt: Date;
+}
+
+// Group orders: collaborative ordering session
+export type GroupOrderStatus = "OPEN" | "CHECKED_OUT" | "CANCELLED";
+export interface GroupOrderParticipant {
+  userId: string;
+  items: Array<{ menuItemId: string; qty: number; options?: Record<string, unknown> | undefined }>;
+}
+export interface GroupOrder {
+  id: string;
+  restaurantId: string;
+  hostUserId: string;
+  status: GroupOrderStatus;
+  participants: GroupOrderParticipant[];
+  createdAt: Date;
+  updatedAt: Date;
+  expiresAt?: Date | undefined;
+  couponCode?: string | undefined;
 }

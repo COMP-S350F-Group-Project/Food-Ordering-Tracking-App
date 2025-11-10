@@ -17,6 +17,12 @@ import { trackingGateway } from "./apps/tracking/tracking.gateway";
 import { logger } from "./libs/common/logger";
 import fs from "node:fs";
 import path from "node:path";
+import { promotionRouter } from "./apps/promotions/coupon.router";
+import { groupOrderRouter } from "./apps/group-orders/group-order.router";
+import { observabilityRouter } from "./apps/observability/metrics.router";
+import { analyticsRouter } from "./apps/analytics/analytics.router";
+import crypto from "node:crypto";
+import { metrics } from "./apps/observability/metrics";
 
 // Seed mock data for demo and local development
 seedData();
@@ -29,7 +35,16 @@ app.set("trust proxy", 1);
 // Security + perf middleware suitable for real deployments
 app.use(helmet());
 app.use(compression());
-app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
+// Request ID for traceability
+morgan.token("reqid", (req: any) => (req as any).id || "-");
+app.use((req, res, next) => {
+  (req as any).id = req.get("x-request-id") || crypto.randomUUID();
+  res.setHeader("x-request-id", (req as any).id);
+  next();
+});
+app.use(
+  morgan(process.env.NODE_ENV === "production" ? "[:reqid] combined" : ":method :url :status [:reqid] - :response-time ms"),
+);
 
 // Allow CORS in dev; in prod, you'd narrow this to known origins
 app.use(cors());
@@ -54,6 +69,10 @@ app.use("/api/v1/orders", orderRouter);
 app.use("/api/v1/catalog", catalogRouter);
 app.use("/api/v1/deliveries", deliveryRouter);
 app.use("/api/v1/users", userRouter);
+app.use("/api/v1/promotions", promotionRouter);
+app.use("/api/v1/group-orders", groupOrderRouter);
+app.use("/api/v1", observabilityRouter);
+app.use("/api/v1/analytics", analyticsRouter);
 
 // Serve frontend build if available (single-server mode)
 const FRONTEND_DIST = process.env.FRONTEND_DIST ?? path.resolve(process.cwd(), "frontend/dist");
@@ -61,10 +80,9 @@ if (fs.existsSync(FRONTEND_DIST)) {
   logger.info("Serving frontend static assets", { dir: FRONTEND_DIST });
   // Do not auto-serve index.html for all; we'll control SPA fallback below.
   app.use(express.static(FRONTEND_DIST, { index: false }));
+  // SPA fallback: serve index.html for any non-API route
   // Express v5: avoid "*"; use a regex route that excludes API, health, and socket paths
-  app.get(/^(?!\/(api|healthz|socket\.io)\/).*/, (req, res, next) => {
-    const accept = String(req.headers.accept ?? "");
-    if (!accept.includes("text/html")) return next();
+  app.get(/^(?!\/(api|healthz|socket\.io)\/).*/, (_req, res) => {
     res.sendFile(path.join(FRONTEND_DIST, "index.html"));
   });
 } else {
@@ -99,6 +117,7 @@ const io = new Server(server, {
 
 io.on("connection", (socket) => {
   logger.info("Socket connected", { socketId: socket.id });
+  metrics.inc("ws_connections");
   socket.on("joinOrder", (payload: { orderId: string }) => {
     if (!payload?.orderId) return;
     const room = `order:${payload.orderId}`;

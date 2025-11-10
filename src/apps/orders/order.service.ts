@@ -4,6 +4,8 @@ import { dataStore, updateOrderStatus } from "../../infrastructure/data-store";
 import { CatalogService } from "../catalog/catalog.service";
 import { PaymentService } from "../payment/payment.service";
 import { DeliveryService } from "../delivery/delivery.service";
+import { CouponService } from "../promotions/coupon.service";
+import { metrics } from "../observability/metrics";
 import { AppError, NotFoundError, ValidationError } from "../../libs/common/errors";
 import {
   Order,
@@ -22,7 +24,16 @@ export interface CreateOrderInput {
   userId: string;
   restaurantId: string;
   items: CreateOrderItemInput[];
-  paymentChannel: "credit_card" | "apple_pay" | "google_pay";
+  paymentChannel:
+    | "credit_card"
+    | "apple_pay"
+    | "google_pay"
+    | "paypal"
+    | "cash_on_delivery"
+    | "wechat_pay";
+  couponCode?: string | undefined;
+  groupOrderId?: string | undefined;
+  deliveryAddressId?: string | undefined;
 }
 
 const ORDER_STATUS_FLOW: Record<OrderStatus, OrderStatus[]> = {
@@ -104,7 +115,18 @@ export class OrderService {
       return item.options ? { ...baseItem, options: item.options } : baseItem;
     });
 
-    const total = orderItems.reduce((sum, item) => sum + item.price * item.qty, 0);
+    const subtotal = orderItems.reduce((sum, item) => sum + item.price * item.qty, 0);
+    let discountAmount = 0;
+    let appliedCoupon: string | undefined;
+    if (input.couponCode) {
+      const promo = new CouponService();
+      const v = promo.validate(input.restaurantId, subtotal, input.couponCode);
+      if (v.valid) {
+        discountAmount = v.discount;
+        appliedCoupon = input.couponCode;
+      }
+    }
+    const total = Math.max(subtotal - discountAmount, 0);
     const order: Order = {
       id: orderId,
       userId: input.userId,
@@ -116,9 +138,15 @@ export class OrderService {
       createdAt: new Date(),
       updatedAt: new Date(),
       items: orderItems,
+      discountAmount: discountAmount || undefined,
+      couponCode: appliedCoupon,
+      groupOrderId: input.groupOrderId,
+      deliveryAddressId: input.deliveryAddressId,
     };
 
     dataStore.orders.set(orderId, order);
+    metrics.inc("orders_created");
+    if (appliedCoupon) metrics.inc("coupons_redeemed");
     this.paymentService.initializePayment({
       orderId,
       channel: input.paymentChannel,

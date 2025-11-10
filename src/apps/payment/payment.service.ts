@@ -6,6 +6,7 @@ import {
 } from "../../infrastructure/data-store";
 import { AppError, NotFoundError } from "../../libs/common/errors";
 import { PayStatus, Payment } from "../../libs/common/types";
+import { metrics } from "../observability/metrics";
 
 export interface InitializePaymentInput {
   orderId: string;
@@ -57,6 +58,8 @@ export class PaymentService {
     payment.txnId = payment.txnId ?? `TXN-${Math.floor(100000 + Math.random() * 900000)}`;
     dataStore.payments.set(payment.id, payment);
     updatePaymentStatus(orderId, nextStatus);
+    if (nextStatus === "PAID") metrics.inc("payments_paid");
+    if (nextStatus === "FAILED") metrics.inc("payments_failed");
     return payment;
   }
 
@@ -70,6 +73,8 @@ export class PaymentService {
     payment.txnId = `TXN-${Math.floor(100000 + Math.random() * 900000)}`;
     dataStore.payments.set(payment.id, payment);
     updatePaymentStatus(orderId, payment.status);
+    if (payment.status === "PAID") metrics.inc("payments_paid");
+    if (payment.status === "FAILED") metrics.inc("payments_failed");
     return payment;
   }
 

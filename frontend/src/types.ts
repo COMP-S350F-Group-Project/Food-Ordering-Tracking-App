@@ -28,6 +28,7 @@ export interface Restaurant {
   rating: number;
   openHours: string;
   isOpen: boolean;
+  city?: string;
 }
 
 export interface MenuItem {
@@ -56,6 +57,9 @@ export interface Order {
   status: OrderStatus;
   payStatus: PayStatus;
   total: number;
+  discountAmount?: number;
+  couponCode?: string;
+  groupOrderId?: string;
   etaMinutes: number | null;
   createdAt: string;
   updatedAt: string;
@@ -67,11 +71,43 @@ export interface Order {
 export interface Payment {
   id: string;
   orderId: string;
-  channel: "credit_card" | "apple_pay" | "google_pay";
+  channel:
+    | "credit_card"
+    | "apple_pay"
+    | "google_pay"
+    | "paypal"
+    | "cash_on_delivery"
+    | "wechat_pay";
   amount: number;
   status: PayStatus;
   txnId?: string;
   processedAt?: string;
+}
+
+export interface Coupon {
+  id: string;
+  code: string;
+  type: "PERCENT" | "AMOUNT";
+  value: number;
+  active: boolean;
+  createdAt: string;
+  usageLimit?: number;
+  usedCount?: number;
+  restaurantId?: string;
+  minOrderAmount?: number;
+}
+
+export interface MetricsSnapshot {
+  orders_created: number;
+  payments_paid: number;
+  payments_failed: number;
+  deliveries_started: number;
+  dispatch_assignments: number;
+  group_orders_created: number;
+  group_orders_checked_out: number;
+  coupons_redeemed: number;
+  ws_connections: number;
+  timestamp: string;
 }
 
 export interface Delivery {
