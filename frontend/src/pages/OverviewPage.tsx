@@ -15,6 +15,14 @@ export function OverviewPage() {
           <Link className="btn btn-secondary" to="/orders/new">
             Start a new order
           </Link>
+          <a
+            className="btn btn-link"
+            href="https://github.com/COMP-S350F-Group-Project/Food-Ordering-Tracking-App"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            View on GitHub
+          </a>
         </div>
       </section>
 
@@ -53,3 +61,4 @@ export function OverviewPage() {
     </div>
   );
 }
+

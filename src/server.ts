@@ -74,6 +74,14 @@ app.use("/api/v1/group-orders", groupOrderRouter);
 app.use("/api/v1", observabilityRouter);
 app.use("/api/v1/analytics", analyticsRouter);
 
+// Serve introduction page (root index.html) at /intro
+const INTRO_HTML = path.resolve(process.cwd(), "index.html");
+if (fs.existsSync(INTRO_HTML)) {
+  app.get("/intro", (_req, res) => {
+    res.sendFile(INTRO_HTML);
+  });
+}
+
 // Serve frontend build if available (single-server mode)
 const FRONTEND_DIST = process.env.FRONTEND_DIST ?? path.resolve(process.cwd(), "frontend/dist");
 if (fs.existsSync(FRONTEND_DIST)) {

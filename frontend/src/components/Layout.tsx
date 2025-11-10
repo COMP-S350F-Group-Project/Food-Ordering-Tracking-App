@@ -53,7 +53,17 @@ export function Layout() {
         <Outlet />
       </main>
       <footer className="app-footer">
-        <span>© 2025 Food Ordering & Tracking. All rights reserved.</span>
+        <span>
+          © 2025 Food Ordering & Tracking • Open source under MIT by Li Yanpei •
+          {" "}
+          <a
+            href="https://github.com/COMP-S350F-Group-Project/Food-Ordering-Tracking-App"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            GitHub
+          </a>
+        </span>
       </footer>
     </div>
   );

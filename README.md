@@ -6,6 +6,10 @@ End-to-end demo of a modern food delivery platform with real-time tracking. The 
 - Frontend: React, Vite, React Router, Socket.IO client, TypeScript
 - Ops: Helmet, compression, rate limiting, structured logging, request IDs, metrics, Docker (multi-stage)
 
+Published Demo: https://fot.hiko.dev/
+
+Repository (open source): https://github.com/COMP-S350F-Group-Project/Food-Ordering-Tracking-App
+
 ## Highlights
 
 - Clear domains: catalog, users, orders, payment, delivery, tracking, promotions, group orders, analytics
@@ -244,3 +248,9 @@ Compose (optional): see `docker-compose.yml` for a ready-to-use service exposing
 - In-memory data & seed: `src/infrastructure/data-store.ts`
 - Sample API flows: `docs/sample-requests.http`
 - React app: `frontend/`
+
+## License
+
+This project is open source under the MIT License. See `LICENSE` for details.
+
+Copyright (c) 2025 Li Yanpei
